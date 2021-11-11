@@ -10,7 +10,7 @@ CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
 
 
-class Client:
+class Client_describe:
 	INIT = 0
 	READY = 1
 	PLAYING = 2
@@ -20,6 +20,7 @@ class Client:
 	PLAY = 1
 	PAUSE = 2
 	TEARDOWN = 3
+	DESCRIBE = 4
 
 	# Initiation..
 	def __init__(self, master, serveraddr, serverport, rtpport, filename):
@@ -85,17 +86,25 @@ class Client:
 		self.pause["bg"] = "white"
 		self.pause.grid(row=1, column=2, padx=2, pady=2)
 
+		# Create Describe button
+		self.describe = Button(self.master, width=20, padx=3, pady=3)
+		self.describe["text"] = "Describe"
+		self.describe["command"] = self.describeMovie
+		self.describe["fg"] = "brown"
+		self.describe["bg"] = "white"
+		self.describe.grid(row=1, column=3, padx=2, pady=2)
+
 		# Create Teardown button
 		self.teardown = Button(self.master, width=20, padx=3, pady=3)
 		self.teardown["text"] = "Teardown"
 		self.teardown["command"] = self.exitClient
 		self.teardown["fg"] = "orange"
 		self.teardown["bg"] = "white"
-		self.teardown.grid(row=1, column=3, padx=2, pady=2)
+		self.teardown.grid(row=1, column=4, padx=2, pady=2)
 
 		# Create a label to display the movie
 		self.label = Label(self.master, height=19)
-		self.label.grid(row=0, column=0, columnspan=4, sticky=W + E + N + S, padx=5, pady=5)
+		self.label.grid(row=0, column=0, columnspan=5, sticky=W + E + N + S, padx=5, pady=5)
 
 		# Create another label to display the statistic
 		self.label1 = Label(self.master)
@@ -156,6 +165,11 @@ class Client:
 			self.playEvent.clear()
 			self.sendRtspRequest(self.PLAY)
 
+	def describeMovie(self):
+		pass
+		if self.state != self.INIT:
+			self.sendRtspRequest(self.DESCRIBE)
+
 	def listenRtp(self):
 		"""Listen for RTP packets."""
 		self.startTime = time.time()
@@ -179,7 +193,7 @@ class Client:
 					if rtpPacket.seqNum() > self.frameNbr:
 						self.frameNbr = rtpPacket.seqNum()
 						self.currFrame.set(rtpPacket.seqNum())
-						print('Receive packet with frame number: ' + str(rtpPacket.seqNum()))
+						# print('Receive packet with frame number: ' + str(rtpPacket.seqNum()))
 						self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
 					elif rtpPacket.seqNum() < self.frameNbr:
 						# Check loss packet here
@@ -266,6 +280,16 @@ class Client:
 			self.rtspSocket.send(request.encode())
 			self.requestSent = self.TEARDOWN
 
+		elif requestCode == self.DESCRIBE:
+			self.rtspSeq += 1
+
+			request = 'DESCRIBE ' + self.fileName + ' RTSP/1.0'
+			request += '\nCSeq: ' + str(self.rtspSeq)
+			request += '\nSession: ' + str(self.sessionId)
+
+			self.rtspSocket.send(request.encode())
+			self.requestSent = self.DESCRIBE
+
 		else:
 			return
 
@@ -320,27 +344,10 @@ class Client:
 					elif self.requestSent == self.TEARDOWN:
 						self.state = self.INIT
 						self.teardownAcked = 1
+					elif self.requestSent == self.DESCRIBE:
+						print(data)
 				else:
 					print('Not OK')
-
-		# if OK == 'OK':
-		# 	if self.requestSent == self.SETUP and self.state == self.INIT:
-		# 		line3 = request[2].split(' ')
-		# 		session = int(line3[-1])
-		# 		self.sessionId = session
-		# 		self.state = self.READY
-		# 		# Create a datagram socket for receiving RTP data and set timeout
-		# 		self.openRtpPort()
-		# 	elif self.requestSent == self.PLAY:
-		# 		self.state = self.PLAYING
-		# 	elif self.requestSent == self.PAUSE:
-		# 		self.state = self.READY
-		# 		self.playEvent.set()
-		# 	elif self.requestSent == self.TEARDOWN:
-		# 		self.state = self.INIT
-		# 		self.teardownAcked = 1
-		# else:
-		# 	print('Not OK')
 
 	def openRtpPort(self):
 		"""Open RTP socket binded to a specified port."""

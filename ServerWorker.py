@@ -1,14 +1,19 @@
+import os.path
+import time
 from random import randint
 import sys, traceback, threading, socket
+from datetime import datetime
 
 from VideoStream import VideoStream
 from RtpPacket import RtpPacket
+
 
 class ServerWorker:
 	SETUP = 'SETUP'
 	PLAY = 'PLAY'
 	PAUSE = 'PAUSE'
 	TEARDOWN = 'TEARDOWN'
+	DESCRIBE = 'DESCRIBE'
 	
 	INIT = 0
 	READY = 1
@@ -106,6 +111,26 @@ class ServerWorker:
 			
 			# Close the RTP socket
 			self.clientInfo['rtpSocket'].close()
+
+		# Process DESCRIBE request
+		elif requestType == self.DESCRIBE:
+			if self.state != self.INIT:
+				print("processing DESCRIBE\n")
+
+				reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq[1] + '\nSession: ' + str(self.clientInfo['session'])
+				reply += '\nDate: ' + str(datetime.now()) + ' GMT'
+				reply += '\nContent-Type: video/x-motion-jpeg'
+
+				file = open(filename)
+				file.seek(0, os.SEEK_END)
+				reply += '\nContent-Length: ' + str(file.tell())
+				reply += '\n\nv=0\nm=video'
+				reply += '\nRTP: Bytestream encode; RTSP: char UTF-8'
+
+				# print(reply)
+
+				connSocket = self.clientInfo['rtspSocket'][0]
+				connSocket.send(reply.encode())
 			
 	def sendRtp(self):
 		"""Send RTP packets over UDP."""
@@ -123,7 +148,7 @@ class ServerWorker:
 					address = self.clientInfo['rtspSocket'][1][0]
 					port = int(self.clientInfo['rtpPort'])
 					self.clientInfo['rtpSocket'].sendto(self.makeRtp(data, frameNumber), (address, port))
-					print('Sent')
+					# print('Sent')
 				except:
 					print("Connection Error")
 					#print('-'*60)

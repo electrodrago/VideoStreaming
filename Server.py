@@ -10,6 +10,10 @@ class Server:
 			SERVER_PORT = int(sys.argv[1])
 		except:
 			print("[Usage: Server.py Server_port]\n")
+
+		# TODO: Delete this
+		SERVER_PORT = 1555
+
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		rtspSocket.bind(('', SERVER_PORT))
 		rtspSocket.listen(5)        
@@ -18,7 +22,7 @@ class Server:
 		while True:
 			clientInfo = {}
 			clientInfo['rtspSocket'] = rtspSocket.accept()
-			ServerWorker(clientInfo).run()		
+			ServerWorker(clientInfo).run()
 
 
 if __name__ == "__main__":
