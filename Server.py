@@ -11,9 +11,6 @@ class Server:
 		except:
 			print("[Usage: Server.py Server_port]\n")
 
-		# TODO: Delete this
-		SERVER_PORT = 1555
-
 		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		rtspSocket.bind(('', SERVER_PORT))
 		rtspSocket.listen(5)        
